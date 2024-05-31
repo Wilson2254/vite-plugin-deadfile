@@ -157,11 +157,26 @@ function getPrePlugin(
         exclude,
         includeHiddenFiles,
       );
+
       await fileMarker.init(absoluteRoot, fileFilter);
       visitor = new ImportVisitor();
     },
 
+    resolveId(source) {
+      if (/svg\?(url|component)/.test(source)) {
+        const iconId = source.replace(/[?#].*$/s, '');
+        fileMarker.revive(iconId);
+        return
+      }
+    },
+
     load(id: string) {
+      if (id.includes('.scss?vue')) {
+        const scssId = id.replace(/[?#].*$/s, '');
+        fileMarker.revive(scssId);
+        return
+      }
+
       fileMarker.revive(id);
     },
 
@@ -282,6 +297,7 @@ function getPostPlugin(
       if (errors !== undefined) return;
       const dynImport = fileMarker.viteDynamicImports;
       markDynamicImportFiles(fileMarker, absoluteRoot, isDynamicModuleLive);
+
 
       if (fileMarker.errorFiles.size > 0) {
         const messages: string[] = [];
