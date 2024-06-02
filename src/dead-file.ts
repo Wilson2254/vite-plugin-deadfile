@@ -7,6 +7,7 @@ import FileMarker from './file-marker';
 import { log, outputLog } from './log';
 import { cleanUrl, isParentDir, isSafeFileName, isSafePath } from './utils';
 import { DynamicImportVisitor, ImportVisitor } from './visitor';
+import path from 'path'
 
 type FileUsedCallback = (file: string) => boolean;
 
@@ -307,11 +308,27 @@ function getPostPlugin(
         this.error(`[vite-plugin-deadfile]: ${messages.join('\n')}`);
       }
 
+      function sortFilesByExtension(files: Set<string>) {
+        const extensionsOrder = ['.ts', '.js', '.vue', '.scss', '.svg', '.jpg', '.jpeg', '.webp', '.png', '.gif'];
+        return [...files].sort((a, b) => {
+          const extA = path.extname(a);
+          const extB = path.extname(b);
+          const indexA = extensionsOrder.indexOf(extA);
+          const indexB = extensionsOrder.indexOf(extB);
+          if (indexA === indexB) {
+            return a.localeCompare(b);
+          }
+          return indexA - indexB;
+        });
+      }
+
+      const sortedDeadFiles = sortFilesByExtension(fileMarker.deadFiles);
+
       let result = [
         `All source files: ${fileMarker.sourceFiles.size}`,
         `Used source files: ${fileMarker.touchedFiles.size}`,
         `Unused source files: ${fileMarker.deadFiles.size}`,
-        ...[...fileMarker.deadFiles].map(
+        ...[...sortedDeadFiles].map(
           (fullPath) => `  ./${relative(absoluteRoot, fullPath)}`,
         ),
       ];
